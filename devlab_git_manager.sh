@@ -213,6 +213,8 @@ while true; do
     echo -e "  9) 🔐 Privacidade do repositório"
     echo -e " 10) 🗑️ Deletar repositório"
     echo -e " 11) ✏️ Corrigir último commit (texto)"
+    #echo -e " 12) ☢️ REINICIAR DO ZERO (LIMPAR TUDO)"
+    #echo -e " 13) 🚨 ZERAR REPOSITÓRIO (WIPE TOTAL)"
     echo -e "\n  0) 👋 Sair"
     echo -e "${GREEN}------------------------------------------${NC}"
     
@@ -713,6 +715,89 @@ while true; do
             pause
             ;;
 
+        12) # REINICIAR DO ZERO
+            printf "\033[H\033[J"
+            get_context
+
+            echo -e "${RED}┌──────────────────────────────────────────┐${NC}"
+            echo -e "${RED}│      🚨 PERIGO: REINICIAR PROJETO        │${NC}"
+            echo -e "${RED}└──────────────────────────────────────────┘${NC}"
+            echo -e "Esta opção irá deletar TODO o histórico do Git local."
+            echo -e "Os seus arquivos serão mantidos, mas o Git será resetado."
+            echo -e "Útil para transformar um projeto velho em um novo 'v1.0.0'."
+            
+            echo -e "\n${YELLOW}Deseja apagar o histórico e começar do zero? (y/n)${NC}"
+            read -rp "👉 Escolha: " CONFIRM
+
+            if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
+                echo -e "\n${YELLOW}💣 Explodindo pasta .git e reiniciando...${NC}"
+                
+                rm -rf .git
+                
+                git init -b main &>/dev/null
+                
+                # (O get_context vai atualizar o cabeçalho automaticamente)
+                
+                echo -e "${GREEN}✅ O projeto foi reiniciado com sucesso!${NC}"
+                echo -e "Agora você pode usar a ${YELLOW}Opção 1${NC} para criar um novo repo no GitHub."
+            else
+                echo -e "\n${BLUE}ℹ️  Operação cancelada.${NC}"
+            fi
+
+            pause
+            ;;
+
+        13) # ZERAR REPOSITÓRIO
+            printf "\033[H\033[J"
+            REPO_NAME=$(basename "$PWD") # Pega o nome da pasta atual
+            
+            echo -e "${RED}┌──────────────────────────────────────────┐${NC}"
+            echo -e "${RED}│      🚨 PERIGO: DESTRUIÇÃO TOTAL         │${NC}"
+            echo -e "${RED}└──────────────────────────────────────────┘${NC}"
+            echo -e "Esta opção irá apagar TUDO na pasta: ${YELLOW}$REPO_NAME${NC}"
+            read -rp "👉 Digite 'LIMPAR' para confirmar: " CONFIRM_CLEAN
+
+            if [[ "$CONFIRM_CLEAN" == "LIMPAR" ]]; then
+                echo -e "\n${YELLOW}💣 Iniciando limpeza profunda...${NC}"
+                
+                rm -rf .git
+                find . -maxdepth 1 ! -name "$(basename "$0")" ! -name "." -exec rm -rf {} +
+                
+                git init -b main &>/dev/null
+                echo "1.0.0" > .devlab_version
+                echo "Shell" > .devlab_stack
+                
+                echo -e "${GREEN}✅ Pasta limpa!${NC}"
+                
+                echo -e "${YELLOW}🔍 Verificando se existe backup no GitHub...${NC}"
+                ensure_gh_auth
+                GH_USER=$(gh api user -q .login)
+                
+                if gh repo view "$GH_USER/$REPO_NAME" &>/dev/null; then
+                    echo -e "${BLUE}ℹ️  Repositório encontrado no GitHub!${NC}"
+                    read -rp "❓ Deseja restaurar os arquivos agora? (y/n): " RESTORE_OPT
+                    
+                    if [[ "$RESTORE_OPT" =~ ^[Yy]$ ]]; then
+                        echo -e "${YELLOW}📡 Restaurando via Modo À Prova de Falhas...${NC}"
+                        git remote add origin "https://github.com/$GH_USER/$REPO_NAME.git"
+                        git fetch origin main &>/dev/null
+                        
+                        if git reset --hard origin/main; then
+                            echo -e "${GREEN}✅ Sincronização completa! O projeto foi restaurado.${NC}"
+                        else
+                            echo -e "${RED}❌ Falha ao sincronizar. Tente a Opção 4 manualmente.${NC}"
+                        fi
+                    fi
+                else
+                    echo -e "${YELLOW}ℹ️  Nenhum repositório encontrado com o nome '${REPO_NAME}'.${NC}"
+                    echo -e "Você pode iniciar um novo projeto do zero agora."
+                fi
+            else
+                echo -e "\n${BLUE}ℹ️  Operação cancelada.${NC}"
+            fi
+            pause
+            ;;
+            
         0) # SAIR
             printf "\033[H\033[J"
             echo -e "${GREEN} Atividades encerradas no DevLab Manager. Até logo! 👋${NC}\n"
