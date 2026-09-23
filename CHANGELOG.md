@@ -2,6 +2,11 @@
 
 Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
+## [1.0.1] - 2026-09-23
+### 🛠️ Manutenção Geral
+- Atualização automática
+- [Descrição manual]
+
 
 ## [1.0.0] - 2026-09-23
 ### 🚀 Inicial
