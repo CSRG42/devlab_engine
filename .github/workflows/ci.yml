@@ -1,0 +1,10 @@
+name: CI - devlab_engine
+on:
+  push:
+    branches: [ "main" ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: shellcheck src/*.sh
