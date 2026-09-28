@@ -267,7 +267,7 @@ while true; do
             if [[ -n $(git status --porcelain) ]]; then
                 echo -e "${BLUE}📦 Salvando alterações locais...${NC}"
                 git add .
-                git commit -m "chores: sincronização automática de arquivos"
+                git commit -m "🛠️ chores: sincronização automática de arquivos"
             fi
 
             git branch -M main

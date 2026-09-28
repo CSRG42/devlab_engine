@@ -2,7 +2,7 @@
 # ==============================================================================
 # Project: devlab_engine
 # Stack:   Bash
-# Version: 1.0.0
+# Version: 1.0.61
 # Author:  César Godinho (CSRG42)
 # License: MIT License
 # Created: 23/09/2026 19:05
@@ -931,7 +931,7 @@ while true; do
             if [[ -n $(git status --porcelain) ]]; then
                 echo -e "${BLUE}📦 Salvando alterações locais...${NC}"
                 git add .
-                git commit -m "chores: sincronização automática de arquivos"
+                git commit -m "🛠️ chores: sincronização automática de arquivos"
             fi
 
             git branch -M main
