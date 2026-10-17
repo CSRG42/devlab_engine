@@ -7,7 +7,7 @@ check_and_install() {
     local PACKAGE=$2
     
     if ! command -v "$CMD" &>/dev/null; then
-        echo -e "${YELLOW}🛠️  Instalando $PACKAGE para você...${NC}"
+        echo -e "${YELLOW}🛠️ Instalando $PACKAGE para você...${NC}"
         sudo apt update && sudo apt install "$PACKAGE" -y
         if command -v "$CMD" &>/dev/null; then
             echo -e "${GREEN}✅ $PACKAGE instalado com sucesso!${NC}"
@@ -23,8 +23,6 @@ check_and_install() {
 check_and_install "git" "git"
 check_and_install "gh" "gh"
 
-printf "\033[H\033[J"
-
 # =========================
 # CONFIGURAÇÕES
 # =========================
@@ -37,6 +35,11 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m'
+
+# =========================
+# Guarda o diretório inicial onde o script foi executado
+# =========================
+ROOT_DIR="$(pwd)"
 
 # =========================
 # DEVLAB ENGINE
@@ -64,7 +67,6 @@ install_gh() {
         exit 1
     fi
 }
-
 # =========================
 # CHECK GIT
 # =========================
@@ -83,7 +85,6 @@ create_file_with_header() {
     shift
     local content=("$@")
 
-    # NÃO recria se já existir
     if [ -f "$file" ]; then
         return
     fi
@@ -108,7 +109,6 @@ create_file_with_header() {
 
 generate_header() {
     case $STACK_NAME in
-
     "Python"|"Bash")
         cat <<EOF
 
@@ -122,21 +122,7 @@ generate_header() {
 # ==============================================================================
 EOF
         ;;
-
-    "JavaScript"|"TypeScript"|"Node.js"|"Java"|"CSharp"|"Go"|"Rust"|"Kotlin"|"Swift")
-        cat <<EOF
-// ==============================================================================
-// Project: $PROJECT_SAFE_NAME
-// Stack:   $STACK_NAME
-// Version: $PROJECT_VERSION
-// Author:  $AUTHOR_FILE
-// License: $LICENSE_FILE
-// Created: $(date +'%d/%m/%Y %H:%M')
-// ==============================================================================
-EOF
-        ;;
-
-    "PHP")
+    "JavaScript"|"TypeScript"|"Node.js"|"Java"|"CSharp"|"Go"|"Rust"|"Kotlin"|"Swift"|"PHP")
         cat <<EOF
 // ==============================================================================
 // Project: $PROJECT_SAFE_NAME
@@ -160,7 +146,6 @@ Created: $(date +'%d/%m/%Y %H:%M')
 ============================================================================== -->
 EOF
         ;;
-
     "CSS")
         cat <<EOF
 /* ==============================================================================
@@ -173,14 +158,12 @@ EOF
 ============================================================================== */
 EOF
         ;;
-
     esac
 }
 
 # =========================
 # VERSION SYSTEM
 # =========================
-
 VERSION_FILE=".devlab_version"
 
 get_current_version() {
@@ -189,7 +172,6 @@ get_current_version() {
         echo "1.0.0"
         return
     fi
-
     tail -n 1 "$VERSION_FILE" | cut -d' ' -f1
 }
 
@@ -218,164 +200,121 @@ increment_version() {
     echo "$NEW_VERSION" > .devlab_version
 
     # =========================
-    # HISTÓRICO (APPEND)
+    # HISTÓRICO 
     # =========================
     echo "$NEW_VERSION - $COMMIT_HASH - $SAFE_DESC - $DATE_NOW" >> .devlab_history
 
     echo "$NEW_VERSION"
 }
 
-# =========================
-# INPUT
-# =========================
-echo -e "${YELLOW}📋 CONFIGURAÇÃO INICIAL${NC}"
-read -rp "    📦 Nome do projeto: " INPUT_NAME
-PROJECT_NAME=${INPUT_NAME:-"DevLab_Project"}
+# =============================
+# LOOP PRINCIPAL 
+# =============================
+while true; do
+    cd "$ROOT_DIR" || exit 1
+    printf "\033[H\033[J"
 
-PROJECT_SAFE_NAME=$(echo "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr -cd '[:alnum:]_')
+    # =========================
+    # DEVLAB ENGINE
+    # =========================
+    echo -e "${GREEN}┌──────────────────────────────────────────────────────────┐${NC}"
+    echo -e "${GREEN}│                     🚀 DEVLAB ENGINE                     │${NC}"
+    echo -e "${GREEN}└──────────────────────────────────────────────────────────┘${NC}"
 
-mkdir -p "$BASE_DIR"
-PROJECT_PATH="$BASE_DIR/$PROJECT_SAFE_NAME"
+    PROJECT_VERSION=$(get_current_version)
 
-if [ -d "$PROJECT_PATH" ]; then
-    i=2
-    while [ -d "${PROJECT_PATH}_${i}" ]; do ((i++)); done
-    PROJECT_SAFE_NAME="${PROJECT_SAFE_NAME}_${i}"
-    PROJECT_PATH="${BASE_DIR}/${PROJECT_SAFE_NAME}"
-fi
+    # =========================
+    # INPUT
+    # =========================
+    echo -e "${YELLOW}📋 CONFIGURAÇÃO INICIAL${NC}"
+    read -rp "    📦 Nome do projeto: " INPUT_NAME
+    PROJECT_NAME=${INPUT_NAME:-"DevLab_Project"}
 
-echo -e "\n${GREEN}✅ Identidade definida:${NC}"
-echo -e "    📂 Pasta: ${NC}$PROJECT_SAFE_NAME"
-echo -e "    📌 Versão: ${NC}$PROJECT_VERSION"
-echo -e "${GREEN}------------------------------------------------------------${NC}"
-# =========================
-# ESCOLHA DE STACK
-# =========================
-echo -e "${YELLOW}┌──────────────────────────────────────────────────────────┐${NC}"
-echo -e "${YELLOW}│                🧠 SELECIONE A TECNOLOGIA                 │${NC}"
-echo -e "${YELLOW}└──────────────────────────────────────────────────────────┘${NC}"
-echo -e "  1) HTML      2) CSS       3) JavaScript     4) TypeScript"
-echo -e "  5) Node.js   6) Python    7) PHP            8) Ruby"
-echo -e "  9) Java      10) Go       11) Rust          12) C#"
-echo -e "  13) Flutter  14) Kotlin   15) Swift         16) Bash"
-echo -e "${YELLOW}------------------------------------------------------------${NC}"
-read -rp "👉 Escolha: " STACK_OPT
-STACK_OPT=${STACK_OPT:-16}
+    PROJECT_SAFE_NAME=$(echo "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr -cd '[:alnum:]_')
 
-mkdir -p "$PROJECT_PATH"/{src,docs,tests,logs,assets,build,releases}
-cd "$PROJECT_PATH" || exit 1
+    mkdir -p "$BASE_DIR"
+    PROJECT_PATH="$BASE_DIR/$PROJECT_SAFE_NAME"
 
-# =========================
-# TEMPLATES
-# =========================
-case $STACK_OPT in
-    1) STACK_NAME="HTML"; TEST_CMD="echo 'HTML Lint'" ;;
-    2) STACK_NAME="CSS"; TEST_CMD="echo 'CSS Lint'" ;;
-    3) STACK_NAME="JavaScript"; TEST_CMD="npm test" ;;
-    4) STACK_NAME="TypeScript"; TEST_CMD="npm test" ;;
-    5) STACK_NAME="Node.js"; TEST_CMD="npm install && npm test" ;;
-    6) STACK_NAME="Python"; TEST_CMD="python -m unittest discover" ;;
-    7) STACK_NAME="PHP"; TEST_CMD="php -l src/*.php" ;;
-    8) STACK_NAME="Ruby"; TEST_CMD="ruby -c src/*.rb" ;;
-    9) STACK_NAME="Java"; TEST_CMD="javac src/*.java" ;;
-    10) STACK_NAME="Go"; TEST_CMD="go test ./..." ;;
-    11) STACK_NAME="Rust"; TEST_CMD="[ -f Cargo.toml ] && cargo test || echo 'Aviso: Cargo.toml não encontrado.'" ;;
-    12) STACK_NAME="CSharp"; TEST_CMD="dotnet test" ;;
-    13) STACK_NAME="Flutter"; TEST_CMD="flutter test" ;;
-    14) STACK_NAME="Kotlin"; TEST_CMD="kotlinc src/*.kt" ;;
-    15) STACK_NAME="Swift"; TEST_CMD="swift test" ;;
-    16) STACK_NAME="Bash"; TEST_CMD="shellcheck src/*.sh" ;;
-    *) STACK_NAME="Vanilla"; TEST_CMD="echo 'No tests defined'" ;;
-esac
-# =========================
-# CRIAÇÃO INICIAL
-# =========================
-mkdir -p src docs logs build tests assets
+    if [ -d "$PROJECT_PATH" ]; then
+        i=2
+        while [ -d "${PROJECT_PATH}_${i}" ]; do ((i++)); done
+        PROJECT_SAFE_NAME="${PROJECT_SAFE_NAME}_${i}"
+        PROJECT_PATH="${BASE_DIR}/${PROJECT_SAFE_NAME}"
+    fi
 
-case $STACK_OPT in
+    echo -e "\n${GREEN}✅ Identidade definida:${NC}"
+    echo -e "    📂 Pasta: ${NC}$PROJECT_SAFE_NAME"
+    echo -e "    📌 Versão: ${NC}$PROJECT_VERSION"
+    echo -e "${GREEN}------------------------------------------------------------${NC}"
 
-1) # HTML
-    create_file_with_header "src/index.html" \
-    "<!DOCTYPE html>" \
-    "<html>" \
-    "<head>" \
-    "    <title>$PROJECT_SAFE_NAME</title>" \
-    "</head>" \
-    "<body>" \
-    "    <h1>🚀 $PROJECT_SAFE_NAME</h1>" \
-    "</body>" \
-    "</html>"
-    ;;
+    # =========================
+    # ESCOLHA DE STACK
+    # =========================
+    echo -e "${YELLOW}┌──────────────────────────────────────────────────────────┐${NC}"
+    echo -e "${YELLOW}│                    🧠 SELECIONE A TECNOLOGIA             │${NC}"
+    echo -e "${YELLOW}└──────────────────────────────────────────────────────────┘${NC}"
+    echo -e "  1) HTML      2) CSS       3) JavaScript     4) TypeScript"
+    echo -e "  5) Node.js   6) Python    7) PHP            8) Ruby"
+    echo -e "  9) Java      10) Go       11) Rust          12) C#"
+    echo -e "  13) Flutter  14) Kotlin   15) Swift         16) Bash"
+    echo -e "${YELLOW}------------------------------------------------------------${NC}"
+    read -rp "👉 Escolha: " STACK_OPT
+    STACK_OPT=${STACK_OPT:-16}
 
-2) # CSS
-    create_file_with_header "src/style.css" \
-    "body { font-family: Arial; }"
-    ;;
+    mkdir -p "$PROJECT_PATH"/{src,docs,tests,logs,assets,build,releases}
+    cd "$PROJECT_PATH" || exit 1
 
-3) # JavaScript
-    create_file_with_header "src/index.js" \
-    "console.log('🚀 $PROJECT_SAFE_NAME');"
-    ;;
+    # =========================
+    # TEMPLATES
+    # =========================
+    case $STACK_OPT in
+        1) STACK_NAME="HTML"; TEST_CMD="echo 'HTML Lint'" ;;
+        2) STACK_NAME="CSS"; TEST_CMD="echo 'CSS Lint'" ;;
+        3) STACK_NAME="JavaScript"; TEST_CMD="npm test" ;;
+        4) STACK_NAME="TypeScript"; TEST_CMD="npm test" ;;
+        5) STACK_NAME="Node.js"; TEST_CMD="npm install && npm test" ;;
+        6) STACK_NAME="Python"; TEST_CMD="python -m unittest discover" ;;
+        7) STACK_NAME="PHP"; TEST_CMD="php -l src/*.php" ;;
+        8) STACK_NAME="Ruby"; TEST_CMD="ruby -c src/*.rb" ;;
+        9) STACK_NAME="Java"; TEST_CMD="javac src/*.java" ;;
+        10) STACK_NAME="Go"; TEST_CMD="go test ./..." ;;
+        11) STACK_NAME="Rust"; TEST_CMD="[ -f Cargo.toml ] && cargo test || echo 'Aviso: Cargo.toml não encontrado.'" ;;
+        12) STACK_NAME="CSharp"; TEST_CMD="dotnet test" ;;
+        13) STACK_NAME="Flutter"; TEST_CMD="flutter test" ;;
+        14) STACK_NAME="Kotlin"; TEST_CMD="kotlinc src/*.kt" ;;
+        15) STACK_NAME="Swift"; TEST_CMD="swift test" ;;
+        16) STACK_NAME="Bash"; TEST_CMD="shellcheck src/*.sh" ;;
+        *) STACK_NAME="Vanilla"; TEST_CMD="echo 'No tests defined'" ;;
+    esac
 
-4) # TypeScript
-    create_file_with_header "src/index.ts" \
-    "console.log('🚀 $PROJECT_SAFE_NAME');"
-    ;;
+    # =========================
+    # CRIAÇÃO INICIAL
+    # =========================
+    mkdir -p src docs logs build tests assets
 
-5) # Node.js
-    create_file_with_header "src/index.js" \
-    "#!/usr/bin/env node" \
-    "console.log('🚀 $PROJECT_SAFE_NAME');"
-
-    chmod +x src/index.js
-    echo '{}' > package.json
-    ;;
-
-6) # Python
-    create_file_with_header "src/main.py" \
-    "#!/usr/bin/env python3" \
-    "print('🚀 $PROJECT_SAFE_NAME')"
-
-    chmod +x src/main.py
-    ;;
-
-7) # PHP
-    create_file_with_header "src/index.php" \
-    "<?php" \
-    "echo '🚀 $PROJECT_SAFE_NAME';" \
-    "?>"
-    ;;
-
-8) # Ruby
-    create_file_with_header "src/main.rb" \
-    "#!/usr/bin/env ruby" \
-    "puts '🚀 $PROJECT_SAFE_NAME'"
-
-    chmod +x src/main.rb
-    ;;
-
-9) # Java
-    create_file_with_header "src/Main.java" \
-    "public class Main {" \
-    "    public static void main(String[] args) {" \
-    "        System.out.println(\"🚀 $PROJECT_SAFE_NAME\");" \
-    "    }" \
-    "}"
-    ;;
-
-10) # Go
-    create_file_with_header "src/main.go" \
-    "package main" \
-    "" \
-    "import \"fmt\"" \
-    "" \
-    "func main() {" \
-    "    fmt.Println(\"🚀 $PROJECT_SAFE_NAME\")" \
-    "}"
-    ;;
-
-11) # Rust
-    cat <<EOF > Cargo.toml
+    case $STACK_OPT in
+        1) create_file_with_header "src/index.html" "<!DOCTYPE html>" "<html>" "<head>" "    <title>$PROJECT_SAFE_NAME</title>" "</head>" "<body>" "    <h1>🚀 $PROJECT_SAFE_NAME</h1>" "</body>" "</html>" ;;
+        2) create_file_with_header "src/style.css" "body { font-family: Arial; }" ;;
+        3) create_file_with_header "src/index.js" "console.log('🚀 $PROJECT_SAFE_NAME');" ;;
+        4) create_file_with_header "src/index.ts" "console.log('🚀 $PROJECT_SAFE_NAME');" ;;
+        5) 
+            create_file_with_header "src/index.js" "#!/usr/bin/env node" "console.log('🚀 $PROJECT_SAFE_NAME');"
+            chmod +x src/index.js
+            echo '{}' > package.json
+            ;;
+        6) 
+            create_file_with_header "src/main.py" "#!/usr/bin/env python3" "print('🚀 $PROJECT_SAFE_NAME')"
+            chmod +x src/main.py
+            ;;
+        7) create_file_with_header "src/index.php" "<?php" "echo '🚀 $PROJECT_SAFE_NAME';" "?>" ;;
+        8) 
+            create_file_with_header "src/main.rb" "#!/usr/bin/env ruby" "puts '🚀 $PROJECT_SAFE_NAME'"
+            chmod +x src/main.rb
+            ;;
+        9) create_file_with_header "src/Main.java" "public class Main {" "    public static void main(String[] args) {" "        System.out.println(\"🚀 $PROJECT_SAFE_NAME\");" "    }" "}" ;;
+        10) create_file_with_header "src/main.go" "package main" "" "import \"fmt\"" "" "func main() {" "    fmt.Println(\"🚀 $PROJECT_SAFE_NAME\")" "}" ;;
+        11) 
+            cat <<EOF > Cargo.toml
 [package]
 name = "$PROJECT_SAFE_NAME"
 version = "$PROJECT_VERSION"
@@ -384,56 +323,25 @@ edition = "2021"
 
 [dependencies]
 EOF
-    create_file_with_header "src/main.rs" \
-    "fn main() {" \
-    "    println!(\"🚀 $PROJECT_SAFE_NAME\");" \
-    "}"
-    ;;
+            create_file_with_header "src/main.rs" "fn main() {" "    println!(\"🚀 $PROJECT_SAFE_NAME\");" "}"
+            ;;
+        12) create_file_with_header "src/Program.cs" "using System;" "" "class Program {" "    static void Main() {" "        Console.WriteLine(\"🚀 $PROJECT_SAFE_NAME\");" "    }" "}" ;;
+        13) 
+            mkdir -p lib
+            create_file_with_header "lib/main.dart" "void main() {" "  print('🚀 $PROJECT_SAFE_NAME');" "}"
+            ;;
+        14) create_file_with_header "src/main.kt" "fun main() {" "    println(\"🚀 $PROJECT_SAFE_NAME\")" "}" ;;
+        15) create_file_with_header "src/main.swift" "print(\"🚀 $PROJECT_SAFE_NAME\")" ;;
+        16) 
+            create_file_with_header "src/main.sh" "#!/bin/bash" "echo '🚀 $PROJECT_SAFE_NAME'"
+            chmod +x src/main.sh
+            ;;
+    esac
 
-12) # C#
-    create_file_with_header "src/Program.cs" \
-    "using System;" \
-    "" \
-    "class Program {" \
-    "    static void Main() {" \
-    "        Console.WriteLine(\"🚀 $PROJECT_SAFE_NAME\");" \
-    "    }" \
-    "}"
-    ;;
-
-13) # Flutter
-    mkdir -p lib
-    create_file_with_header "lib/main.dart" \
-    "void main() {" \
-    "  print('🚀 $PROJECT_SAFE_NAME');" \
-    "}"
-    ;;
-
-14) # Kotlin
-    create_file_with_header "src/main.kt" \
-    "fun main() {" \
-    "    println(\"🚀 $PROJECT_SAFE_NAME\")" \
-    "}"
-    ;;
-
-15) # Swift
-    create_file_with_header "src/main.swift" \
-    "print(\"🚀 $PROJECT_SAFE_NAME\")"
-    ;;
-
-16) # Bash
-    create_file_with_header "src/main.sh" \
-    "#!/bin/bash" \
-    "echo '🚀 $PROJECT_SAFE_NAME'"
-
-    chmod +x src/main.sh
-    ;;
-
-esac
-# =========================
-# LICENSE
-# =========================
-cat <<EOF > LICENSES
+    # =========================
+    # LICENSE & DOCS
+    # =========================
+    cat <<EOF > LICENSES
 MIT License (English Version)
 
 Copyright (c) $(date +'%Y') $AUTHOR_FILE
@@ -456,11 +364,10 @@ O aviso de copyright acima e este aviso de permissão devem ser incluídos em to
 
 O SOFTWARE É FORNECIDO "COMO ESTÁ", SEM GARANTIA DE QUALQUER TIPO, EXPRESSA OU IMPLÍCITA, INCLUINDO, MAS NÃO SE LIMITANDO ÀS GARANTIAS DE COMERCIALIZAÇÃO, ADEQUAÇÃO A UM DETERMINADO FIM E NÃO INFRAÇÃO. EM NENHUM CASO OS AUTORES OU TITULARES DE COPYRIGHT SERÃO RESPONSÁVEIS POR QUALQUER RECLAMAÇÃO, DANOS OU OUTRA RESPONSABILIDADE, SEJA EM AÇÃO DE CONTRATO, DELITO OU DE OUTRA FORMA, DECORRENTE DE, FORA DE OU EM CONEXÃO COM O SOFTWARE OU O USO OU OUTRAS NEGOCIAÇÕES NO SOFTWARE.
 EOF
-
-# =========================
-# CONTRIBUTING
-# =========================
-cat <<EOF > CONTRIBUTING.md
+    # =========================
+    # CONTRIBUTING
+    # =========================
+    cat <<EOF > CONTRIBUTING.md
 # 🤝 Contribuindo para $PROJECT_SAFE_NAME
 
 Primeiramente, obrigado por se interessar em contribuir! 
@@ -476,11 +383,10 @@ Primeiramente, obrigado por se interessar em contribuir!
 - Push para a Branch
 - Abra um Pull Request
 EOF
-
-# =========================
-# CODE OF CONDUCT
-# =========================
-cat <<EOF > CODE_OF_CONDUCT.md
+    # =========================
+    # CODE OF CONDUCT
+    # =========================
+    cat <<EOF > CODE_OF_CONDUCT.md
 # Código de Conduta
 
 ## Nosso Compromisso
@@ -494,11 +400,10 @@ Nós, como membros, contribuintes e líderes, nos comprometemos a tornar a parti
 
 *Para mais detalhes, consulte o Contributor Covenant.*
 EOF
-
-# =========================
-# CHANGELOG
-# =========================
-cat <<EOF > CHANGELOG.md
+    # =========================
+    # LCHANGELOG
+    # =========================
+    cat <<EOF > CHANGELOG.md
 # 📜 Changelog
 
 Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
@@ -514,11 +419,10 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 ### 🛠️ Alterado
 - Stack definida para: $STACK_NAME.
 EOF
-
-# =========================
-# README
-# =========================
-cat <<EOF > README.md
+    # =========================
+    # README
+    # =========================
+    cat <<EOF > README.md
 # 🚀 $PROJECT_SAFE_NAME
 
 > **Stack:** $STACK_NAME | **Versão:** $PROJECT_VERSION | **Licença:** $LICENSE_FILE
@@ -607,60 +511,13 @@ cat <<EOF >> README.md
 ---
 
 *Criado em: $(date +'%d/%m/%Y %H:%M')*
-
 EOF
 
-# =========================
-# GERAÇÃO DO GITHUB ACTIONS
-# =========================
-mkdir -p .github/workflows
-cat <<EOF > .github/workflows/ci.yml
-name: DevLab CI
-
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Stack Tests
-        run: |
-          echo "Iniciando testes para $STACK_NAME..."
-          
-          if [[ "$STACK_NAME" == "Rust" && -f "Cargo.toml" ]]; then
-            cargo test
-          elif [[ "$STACK_NAME" == "Node.js" && -f "package.json" ]]; then
-            npm test
-          elif [[ "$STACK_NAME" == "Python" ]]; then
-            python3 -m unittest discover tests
-          elif [[ "$STACK_NAME" == "Bash" ]]; then
-            # -s bash: força o padrão do seu sistema
-            # -e SC1128: ignora o erro de shebang/linha 1
-            shellcheck -s bash -e SC1128 src/*.sh
-          else
-            echo "⚠️  Nenhum teste específico configurado ou arquivo de manifesto ausente. Pulando..."
-          fi
-EOF
-
-# ==============================================================================
-#                             DEVLAB GIT MANAGER
-# ==============================================================================
-cat <<'EOF' > devlab_git_manager.sh
-
-EOF
-chmod +x devlab_git_manager.sh
-
-# =========================
-# CI/CD & GIT
-# =========================
-mkdir -p .github/workflows
-cat <<EOF > .github/workflows/ci.yml
+    # =========================
+    # CI/CD & GIT
+    # =========================
+    mkdir -p .github/workflows
+    cat <<EOF > .github/workflows/ci.yml
 name: CI - $PROJECT_SAFE_NAME
 on:
   push:
@@ -672,61 +529,82 @@ jobs:
       - uses: actions/checkout@v4
       - run: $TEST_CMD
 EOF
-# =========================
-# GIT & GITHUB FLOW
-# =========================
-echo -e "\n${YELLOW}⚙️ CONFIGURAÇÕES DE DEPLOY:${NC}"
-read -rp "    > Criar no GitHub? (y/n): " CREATE_GH
+#
+# ==============================================================================
+#                             DEVLAB GIT MANAGER
+# ==============================================================================
+cat <<'EOF' > devlab_git_manager.sh
 
-if [[ "$CREATE_GH" =~ ^[Yy]$ ]]; then
+EOF
+chmod +x devlab_git_manager.sh
+    # =========================
+    # CRIAÇÂO DO REPOSITÓRIO
+    # =========================
+    echo -e "\n${YELLOW}⚙️ CONFIGURAÇÕES DE DEPLOY:${NC}"
+    read -rp "    > Criar no GitHub? (y/n): " CREATE_GH
 
-    GIT_USER=$(git config --global user.name)
-    GIT_EMAIL=$(git config --global user.email)
+    if [[ "$CREATE_GH" =~ ^[Yy]$ ]]; then
+        GIT_USER=$(git config --global user.name)
+        GIT_EMAIL=$(git config --global user.email)
 
-    if [[ -z "$GIT_USER" || -z "$GIT_EMAIL" ]]; then
-        echo -e "\n${YELLOW}👤 Identidade Git não encontrada! Necessário para o GitHub.${NC}"
-        read -rp "   📧 E-mail do GitHub: " NEW_EMAIL
-        read -rp "   👤 Nome de Usuário: " NEW_NAME
-        git config --global user.email "$NEW_EMAIL"
-        git config --global user.name "$NEW_NAME"
+        if [[ -z "$GIT_USER" || -z "$GIT_EMAIL" ]]; then
+            echo -e "\n${YELLOW}👤 Identidade Git não encontrada! Necessário para o GitHub.${NC}"
+            read -rp "    📧 E-mail do GitHub: " NEW_EMAIL
+            read -rp "    👤 Nome de Usuário: " NEW_NAME
+            git config --global user.email "$NEW_EMAIL"
+            git config --global user.name "$NEW_NAME"
+        fi
+
+        ensure_gh_auth
     fi
 
-    ensure_gh_auth
-fi
+    git init &>/dev/null
+    git branch -M main &>/dev/null
+    git add .
+    git commit -m "🔥 init: ($PROJECT_SAFE_NAME) | $STACK_NAME | v$PROJECT_VERSION | Início de projeto" &>/dev/null
 
-git init &>/dev/null
-git branch -M main &>/dev/null
-git add .
-git commit -m "🔥 init: ($PROJECT_SAFE_NAME) | $STACK_NAME | v$PROJECT_VERSION | Início de projeto" &>/dev/null
-
-if [[ "$CREATE_GH" =~ ^[Yy]$ ]]; then
-    echo -e "${YELLOW}🌐 Verificando repositório remoto...${NC}"
-    
-    if gh repo create "$PROJECT_SAFE_NAME" --private --source=. --remote=origin &>/dev/null; then
-        git push -u origin main &>/dev/null
-        echo -e "${GREEN}✅ Repositório criado e sincronizado!${NC}"
-    else
-        echo -e "${YELLOW}⚠️  Repo já existe. Sincronizando com cautela...${NC}"
-        GH_USER=$(gh api user -q .login)
-        git remote add origin "https://github.com/$GH_USER/$PROJECT_SAFE_NAME.git" 2>/dev/null
+    if [[ "$CREATE_GH" =~ ^[Yy]$ ]]; then
+        echo -e "${YELLOW}🌐 Verificando repositório remoto...${NC}"
         
-        git fetch origin main &>/dev/null
-        
-        git merge origin/main --allow-unrelated-histories -X ours -m "📡 integração: Repositório local e remoto sincronizados" &>/dev/null
-        
-        git push -u origin main &>/dev/null
-        echo -e "${GREEN}✅ Vinculado e protegido contra conflitos!${NC}"
+        if gh repo create "$PROJECT_SAFE_NAME" --private --source=. --remote=origin &>/dev/null; then
+            git push -u origin main &>/dev/null
+            echo -e "${GREEN}✅ Repositório criado e sincronizado!${NC}"
+        else
+            echo -e "${YELLOW}⚠️ Repo já existe. Sincronizando com cautela...${NC}"
+            GH_USER=$(gh api user -q .login)
+            git remote add origin "https://github.com/$GH_USER/$PROJECT_SAFE_NAME.git" 2>/dev/null
+            git fetch origin main &>/dev/null
+            git merge origin/main --allow-unrelated-histories -X ours -m "📡 integração: Repositório local e remoto sincronizados" &>/dev/null
+            git push -u origin main &>/dev/null
+            echo -e "${GREEN}✅ Vinculado e protegido contra conflitos!${NC}"
+        fi
     fi
-fi
 
-# =========================
-# FINALIZAÇÃO
-# =========================
-echo -e "${GREEN}┌──────────────────────────────────────────┐${NC}"
-echo -e "${GREEN}│    🚀 DEVLAB FINALIZADO COM SUCESSO!     │${NC}"
-echo -e "${GREEN}└──────────────────────────────────────────┘${NC}"
-echo -e " 📍 LOCAL:   ${NC}$PROJECT_PATH"
-echo -e " 📌 VERSÃO:  ${NC}$PROJECT_VERSION"
-echo -e " 🧠 STACK:   ${NC}$STACK_NAME"
-echo -e " 🛠️  GIT MGR: ${NC}./devlab_git_manager.sh"
-echo -e "${GREEN}------------------------------------------------------------${NC}"
+    # =========================
+    # FINALIZAÇÃO DO PROJETO
+    # =========================
+    echo -e "${GREEN}┌──────────────────────────────────────────┐${NC}"
+    echo -e "${GREEN}│    🚀 DEVLAB FINALIZADO COM SUCESSO!     │${NC}"
+    echo -e "${GREEN}└──────────────────────────────────────────┘${NC}"
+    echo -e " 📍 LOCAL:    ${NC}$PROJECT_PATH"
+    echo -e " 📌 VERSÃO:  ${NC}$PROJECT_VERSION"
+    echo -e " 🧠 STACK:   ${NC}$STACK_NAME"
+    echo -e " 🛠️  GIT MGR: ${NC}./devlab_git_manager.sh"
+    echo -e "${GREEN}------------------------------------------------------------${NC}"
+    echo -e "\n${GREEN}🎉 Projeto '$PROJECT_SAFE_NAME' criado com sucesso em '$PROJECT_PATH'!${NC}"
+    echo -e "${GREEN}------------------------------------------------------------${NC}"
+
+    # =========================
+    # PERGUNTA DE REPETIÇÃO
+    # =========================
+    echo
+    read -rp "Deseja criar outro projeto? (y/n): " CONTINUE_CHOICE
+    if [[ ! "$CONTINUE_CHOICE" =~ ^[Yy]$ ]]; then
+        echo -e "${YELLOW}┌────────────────────────────────────────────┐${NC}"
+        echo -e "${YELLOW}│    👋 Saindo do DevLab Engine. Até mais!   │${NC}"
+        echo -e "${YELLOW}└────────────────────────────────────────────┘${NC}"
+        echo
+        read -rp "Pressione ENTER para fechar o terminal..."
+        break
+    fi
+done
