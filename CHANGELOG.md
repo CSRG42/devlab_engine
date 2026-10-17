@@ -2,6 +2,11 @@
 
 Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 
+## [1.0.64] - 2026-10-17
+### ♻️ Refatoração de Código
+- Atualização automática
+- [Descrição manual]
+
 ## [1.0.63] - 2026-10-17
 ### ♻️ Refatoração de Código
 - Atualização automática

@@ -2,13 +2,12 @@
 # ==============================================================================
 # Project: devlab_engine
 # Stack:   Bash
-# Version: 1.0.61
+# Version: 1.0.64
 # Author:  César Godinho (CSRG42)
 # License: MIT License
 # Created: 23/09/2026 19:05
 # ==============================================================================
 
-#!/bin/bash
 # ==========================
 # AUTO-INSTALAÇÃO E CHECKUP
 # ==========================
@@ -17,7 +16,7 @@ check_and_install() {
     local PACKAGE=$2
     
     if ! command -v "$CMD" &>/dev/null; then
-        echo -e "${YELLOW}🛠️  Instalando $PACKAGE para você...${NC}"
+        echo -e "${YELLOW}🛠️ Instalando $PACKAGE para você...${NC}"
         sudo apt update && sudo apt install "$PACKAGE" -y
         if command -v "$CMD" &>/dev/null; then
             echo -e "${GREEN}✅ $PACKAGE instalado com sucesso!${NC}"
@@ -33,8 +32,6 @@ check_and_install() {
 check_and_install "git" "git"
 check_and_install "gh" "gh"
 
-printf "\033[H\033[J"
-
 # =========================
 # CONFIGURAÇÕES
 # =========================
@@ -47,6 +44,11 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m'
+
+# =========================
+# Guarda o diretório inicial onde o script foi executado
+# =========================
+ROOT_DIR="$(pwd)"
 
 # =========================
 # DEVLAB ENGINE
@@ -74,7 +76,6 @@ install_gh() {
         exit 1
     fi
 }
-
 # =========================
 # CHECK GIT
 # =========================
@@ -93,7 +94,6 @@ create_file_with_header() {
     shift
     local content=("$@")
 
-    # NÃO recria se já existir
     if [ -f "$file" ]; then
         return
     fi
@@ -118,7 +118,6 @@ create_file_with_header() {
 
 generate_header() {
     case $STACK_NAME in
-
     "Python"|"Bash")
         cat <<EOF
 
@@ -132,21 +131,7 @@ generate_header() {
 # ==============================================================================
 EOF
         ;;
-
-    "JavaScript"|"TypeScript"|"Node.js"|"Java"|"CSharp"|"Go"|"Rust"|"Kotlin"|"Swift")
-        cat <<EOF
-// ==============================================================================
-// Project: $PROJECT_SAFE_NAME
-// Stack:   $STACK_NAME
-// Version: $PROJECT_VERSION
-// Author:  $AUTHOR_FILE
-// License: $LICENSE_FILE
-// Created: $(date +'%d/%m/%Y %H:%M')
-// ==============================================================================
-EOF
-        ;;
-
-    "PHP")
+    "JavaScript"|"TypeScript"|"Node.js"|"Java"|"CSharp"|"Go"|"Rust"|"Kotlin"|"Swift"|"PHP")
         cat <<EOF
 // ==============================================================================
 // Project: $PROJECT_SAFE_NAME
@@ -170,7 +155,6 @@ Created: $(date +'%d/%m/%Y %H:%M')
 ============================================================================== -->
 EOF
         ;;
-
     "CSS")
         cat <<EOF
 /* ==============================================================================
@@ -183,14 +167,12 @@ EOF
 ============================================================================== */
 EOF
         ;;
-
     esac
 }
 
 # =========================
 # VERSION SYSTEM
 # =========================
-
 VERSION_FILE=".devlab_version"
 
 get_current_version() {
@@ -199,7 +181,6 @@ get_current_version() {
         echo "1.0.0"
         return
     fi
-
     tail -n 1 "$VERSION_FILE" | cut -d' ' -f1
 }
 
@@ -228,164 +209,121 @@ increment_version() {
     echo "$NEW_VERSION" > .devlab_version
 
     # =========================
-    # HISTÓRICO (APPEND)
+    # HISTÓRICO 
     # =========================
     echo "$NEW_VERSION - $COMMIT_HASH - $SAFE_DESC - $DATE_NOW" >> .devlab_history
 
     echo "$NEW_VERSION"
 }
 
-# =========================
-# INPUT
-# =========================
-echo -e "${YELLOW}📋 CONFIGURAÇÃO INICIAL${NC}"
-read -rp "    📦 Nome do projeto: " INPUT_NAME
-PROJECT_NAME=${INPUT_NAME:-"DevLab_Project"}
+# =============================
+# LOOP PRINCIPAL 
+# =============================
+while true; do
+    cd "$ROOT_DIR" || exit 1
+    printf "\033[H\033[J"
 
-PROJECT_SAFE_NAME=$(echo "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr -cd '[:alnum:]_')
+    # =========================
+    # DEVLAB ENGINE
+    # =========================
+    echo -e "${GREEN}┌──────────────────────────────────────────────────────────┐${NC}"
+    echo -e "${GREEN}│                     🚀 DEVLAB ENGINE                     │${NC}"
+    echo -e "${GREEN}└──────────────────────────────────────────────────────────┘${NC}"
 
-mkdir -p "$BASE_DIR"
-PROJECT_PATH="$BASE_DIR/$PROJECT_SAFE_NAME"
+    PROJECT_VERSION=$(get_current_version)
 
-if [ -d "$PROJECT_PATH" ]; then
-    i=2
-    while [ -d "${PROJECT_PATH}_${i}" ]; do ((i++)); done
-    PROJECT_SAFE_NAME="${PROJECT_SAFE_NAME}_${i}"
-    PROJECT_PATH="${BASE_DIR}/${PROJECT_SAFE_NAME}"
-fi
+    # =========================
+    # INPUT
+    # =========================
+    echo -e "${YELLOW}📋 CONFIGURAÇÃO INICIAL${NC}"
+    read -rp "    📦 Nome do projeto: " INPUT_NAME
+    PROJECT_NAME=${INPUT_NAME:-"DevLab_Project"}
 
-echo -e "\n${GREEN}✅ Identidade definida:${NC}"
-echo -e "    📂 Pasta: ${NC}$PROJECT_SAFE_NAME"
-echo -e "    📌 Versão: ${NC}$PROJECT_VERSION"
-echo -e "${GREEN}------------------------------------------------------------${NC}"
-# =========================
-# ESCOLHA DE STACK
-# =========================
-echo -e "${YELLOW}┌──────────────────────────────────────────────────────────┐${NC}"
-echo -e "${YELLOW}│                🧠 SELECIONE A TECNOLOGIA                 │${NC}"
-echo -e "${YELLOW}└──────────────────────────────────────────────────────────┘${NC}"
-echo -e "  1) HTML      2) CSS       3) JavaScript     4) TypeScript"
-echo -e "  5) Node.js   6) Python    7) PHP            8) Ruby"
-echo -e "  9) Java      10) Go       11) Rust          12) C#"
-echo -e "  13) Flutter  14) Kotlin   15) Swift         16) Bash"
-echo -e "${YELLOW}------------------------------------------------------------${NC}"
-read -rp "👉 Escolha: " STACK_OPT
-STACK_OPT=${STACK_OPT:-16}
+    PROJECT_SAFE_NAME=$(echo "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr -cd '[:alnum:]_')
 
-mkdir -p "$PROJECT_PATH"/{src,docs,tests,logs,assets,build,releases}
-cd "$PROJECT_PATH" || exit 1
+    mkdir -p "$BASE_DIR"
+    PROJECT_PATH="$BASE_DIR/$PROJECT_SAFE_NAME"
 
-# =========================
-# TEMPLATES
-# =========================
-case $STACK_OPT in
-    1) STACK_NAME="HTML"; TEST_CMD="echo 'HTML Lint'" ;;
-    2) STACK_NAME="CSS"; TEST_CMD="echo 'CSS Lint'" ;;
-    3) STACK_NAME="JavaScript"; TEST_CMD="npm test" ;;
-    4) STACK_NAME="TypeScript"; TEST_CMD="npm test" ;;
-    5) STACK_NAME="Node.js"; TEST_CMD="npm install && npm test" ;;
-    6) STACK_NAME="Python"; TEST_CMD="python -m unittest discover" ;;
-    7) STACK_NAME="PHP"; TEST_CMD="php -l src/*.php" ;;
-    8) STACK_NAME="Ruby"; TEST_CMD="ruby -c src/*.rb" ;;
-    9) STACK_NAME="Java"; TEST_CMD="javac src/*.java" ;;
-    10) STACK_NAME="Go"; TEST_CMD="go test ./..." ;;
-    11) STACK_NAME="Rust"; TEST_CMD="[ -f Cargo.toml ] && cargo test || echo 'Aviso: Cargo.toml não encontrado.'" ;;
-    12) STACK_NAME="CSharp"; TEST_CMD="dotnet test" ;;
-    13) STACK_NAME="Flutter"; TEST_CMD="flutter test" ;;
-    14) STACK_NAME="Kotlin"; TEST_CMD="kotlinc src/*.kt" ;;
-    15) STACK_NAME="Swift"; TEST_CMD="swift test" ;;
-    16) STACK_NAME="Bash"; TEST_CMD="shellcheck src/*.sh" ;;
-    *) STACK_NAME="Vanilla"; TEST_CMD="echo 'No tests defined'" ;;
-esac
-# =========================
-# CRIAÇÃO INICIAL
-# =========================
-mkdir -p src docs logs build tests assets
+    if [ -d "$PROJECT_PATH" ]; then
+        i=2
+        while [ -d "${PROJECT_PATH}_${i}" ]; do ((i++)); done
+        PROJECT_SAFE_NAME="${PROJECT_SAFE_NAME}_${i}"
+        PROJECT_PATH="${BASE_DIR}/${PROJECT_SAFE_NAME}"
+    fi
 
-case $STACK_OPT in
+    echo -e "\n${GREEN}✅ Identidade definida:${NC}"
+    echo -e "    📂 Pasta: ${NC}$PROJECT_SAFE_NAME"
+    echo -e "    📌 Versão: ${NC}$PROJECT_VERSION"
+    echo -e "${GREEN}------------------------------------------------------------${NC}"
 
-1) # HTML
-    create_file_with_header "src/index.html" \
-    "<!DOCTYPE html>" \
-    "<html>" \
-    "<head>" \
-    "    <title>$PROJECT_SAFE_NAME</title>" \
-    "</head>" \
-    "<body>" \
-    "    <h1>🚀 $PROJECT_SAFE_NAME</h1>" \
-    "</body>" \
-    "</html>"
-    ;;
+    # =========================
+    # ESCOLHA DE STACK
+    # =========================
+    echo -e "${YELLOW}┌──────────────────────────────────────────────────────────┐${NC}"
+    echo -e "${YELLOW}│                    🧠 SELECIONE A TECNOLOGIA             │${NC}"
+    echo -e "${YELLOW}└──────────────────────────────────────────────────────────┘${NC}"
+    echo -e "  1) HTML      2) CSS       3) JavaScript     4) TypeScript"
+    echo -e "  5) Node.js   6) Python    7) PHP            8) Ruby"
+    echo -e "  9) Java      10) Go       11) Rust          12) C#"
+    echo -e "  13) Flutter  14) Kotlin   15) Swift         16) Bash"
+    echo -e "${YELLOW}------------------------------------------------------------${NC}"
+    read -rp "👉 Escolha: " STACK_OPT
+    STACK_OPT=${STACK_OPT:-16}
 
-2) # CSS
-    create_file_with_header "src/style.css" \
-    "body { font-family: Arial; }"
-    ;;
+    mkdir -p "$PROJECT_PATH"/{src,docs,tests,logs,assets,build,releases}
+    cd "$PROJECT_PATH" || exit 1
 
-3) # JavaScript
-    create_file_with_header "src/index.js" \
-    "console.log('🚀 $PROJECT_SAFE_NAME');"
-    ;;
+    # =========================
+    # TEMPLATES
+    # =========================
+    case $STACK_OPT in
+        1) STACK_NAME="HTML"; TEST_CMD="echo 'HTML Lint'" ;;
+        2) STACK_NAME="CSS"; TEST_CMD="echo 'CSS Lint'" ;;
+        3) STACK_NAME="JavaScript"; TEST_CMD="npm test" ;;
+        4) STACK_NAME="TypeScript"; TEST_CMD="npm test" ;;
+        5) STACK_NAME="Node.js"; TEST_CMD="npm install && npm test" ;;
+        6) STACK_NAME="Python"; TEST_CMD="python -m unittest discover" ;;
+        7) STACK_NAME="PHP"; TEST_CMD="php -l src/*.php" ;;
+        8) STACK_NAME="Ruby"; TEST_CMD="ruby -c src/*.rb" ;;
+        9) STACK_NAME="Java"; TEST_CMD="javac src/*.java" ;;
+        10) STACK_NAME="Go"; TEST_CMD="go test ./..." ;;
+        11) STACK_NAME="Rust"; TEST_CMD="[ -f Cargo.toml ] && cargo test || echo 'Aviso: Cargo.toml não encontrado.'" ;;
+        12) STACK_NAME="CSharp"; TEST_CMD="dotnet test" ;;
+        13) STACK_NAME="Flutter"; TEST_CMD="flutter test" ;;
+        14) STACK_NAME="Kotlin"; TEST_CMD="kotlinc src/*.kt" ;;
+        15) STACK_NAME="Swift"; TEST_CMD="swift test" ;;
+        16) STACK_NAME="Bash"; TEST_CMD="shellcheck src/*.sh" ;;
+        *) STACK_NAME="Vanilla"; TEST_CMD="echo 'No tests defined'" ;;
+    esac
 
-4) # TypeScript
-    create_file_with_header "src/index.ts" \
-    "console.log('🚀 $PROJECT_SAFE_NAME');"
-    ;;
+    # =========================
+    # CRIAÇÃO INICIAL
+    # =========================
+    mkdir -p src docs logs build tests assets
 
-5) # Node.js
-    create_file_with_header "src/index.js" \
-    "#!/usr/bin/env node" \
-    "console.log('🚀 $PROJECT_SAFE_NAME');"
-
-    chmod +x src/index.js
-    echo '{}' > package.json
-    ;;
-
-6) # Python
-    create_file_with_header "src/main.py" \
-    "#!/usr/bin/env python3" \
-    "print('🚀 $PROJECT_SAFE_NAME')"
-
-    chmod +x src/main.py
-    ;;
-
-7) # PHP
-    create_file_with_header "src/index.php" \
-    "<?php" \
-    "echo '🚀 $PROJECT_SAFE_NAME';" \
-    "?>"
-    ;;
-
-8) # Ruby
-    create_file_with_header "src/main.rb" \
-    "#!/usr/bin/env ruby" \
-    "puts '🚀 $PROJECT_SAFE_NAME'"
-
-    chmod +x src/main.rb
-    ;;
-
-9) # Java
-    create_file_with_header "src/Main.java" \
-    "public class Main {" \
-    "    public static void main(String[] args) {" \
-    "        System.out.println(\"🚀 $PROJECT_SAFE_NAME\");" \
-    "    }" \
-    "}"
-    ;;
-
-10) # Go
-    create_file_with_header "src/main.go" \
-    "package main" \
-    "" \
-    "import \"fmt\"" \
-    "" \
-    "func main() {" \
-    "    fmt.Println(\"🚀 $PROJECT_SAFE_NAME\")" \
-    "}"
-    ;;
-
-11) # Rust
-    cat <<EOF > Cargo.toml
+    case $STACK_OPT in
+        1) create_file_with_header "src/index.html" "<!DOCTYPE html>" "<html>" "<head>" "    <title>$PROJECT_SAFE_NAME</title>" "</head>" "<body>" "    <h1>🚀 $PROJECT_SAFE_NAME</h1>" "</body>" "</html>" ;;
+        2) create_file_with_header "src/style.css" "body { font-family: Arial; }" ;;
+        3) create_file_with_header "src/index.js" "console.log('🚀 $PROJECT_SAFE_NAME');" ;;
+        4) create_file_with_header "src/index.ts" "console.log('🚀 $PROJECT_SAFE_NAME');" ;;
+        5) 
+            create_file_with_header "src/index.js" "#!/usr/bin/env node" "console.log('🚀 $PROJECT_SAFE_NAME');"
+            chmod +x src/index.js
+            echo '{}' > package.json
+            ;;
+        6) 
+            create_file_with_header "src/main.py" "#!/usr/bin/env python3" "print('🚀 $PROJECT_SAFE_NAME')"
+            chmod +x src/main.py
+            ;;
+        7) create_file_with_header "src/index.php" "<?php" "echo '🚀 $PROJECT_SAFE_NAME';" "?>" ;;
+        8) 
+            create_file_with_header "src/main.rb" "#!/usr/bin/env ruby" "puts '🚀 $PROJECT_SAFE_NAME'"
+            chmod +x src/main.rb
+            ;;
+        9) create_file_with_header "src/Main.java" "public class Main {" "    public static void main(String[] args) {" "        System.out.println(\"🚀 $PROJECT_SAFE_NAME\");" "    }" "}" ;;
+        10) create_file_with_header "src/main.go" "package main" "" "import \"fmt\"" "" "func main() {" "    fmt.Println(\"🚀 $PROJECT_SAFE_NAME\")" "}" ;;
+        11) 
+            cat <<EOF > Cargo.toml
 [package]
 name = "$PROJECT_SAFE_NAME"
 version = "$PROJECT_VERSION"
@@ -394,56 +332,25 @@ edition = "2021"
 
 [dependencies]
 EOF
-    create_file_with_header "src/main.rs" \
-    "fn main() {" \
-    "    println!(\"🚀 $PROJECT_SAFE_NAME\");" \
-    "}"
-    ;;
+            create_file_with_header "src/main.rs" "fn main() {" "    println!(\"🚀 $PROJECT_SAFE_NAME\");" "}"
+            ;;
+        12) create_file_with_header "src/Program.cs" "using System;" "" "class Program {" "    static void Main() {" "        Console.WriteLine(\"🚀 $PROJECT_SAFE_NAME\");" "    }" "}" ;;
+        13) 
+            mkdir -p lib
+            create_file_with_header "lib/main.dart" "void main() {" "  print('🚀 $PROJECT_SAFE_NAME');" "}"
+            ;;
+        14) create_file_with_header "src/main.kt" "fun main() {" "    println(\"🚀 $PROJECT_SAFE_NAME\")" "}" ;;
+        15) create_file_with_header "src/main.swift" "print(\"🚀 $PROJECT_SAFE_NAME\")" ;;
+        16) 
+            create_file_with_header "src/main.sh" "#!/bin/bash" "echo '🚀 $PROJECT_SAFE_NAME'"
+            chmod +x src/main.sh
+            ;;
+    esac
 
-12) # C#
-    create_file_with_header "src/Program.cs" \
-    "using System;" \
-    "" \
-    "class Program {" \
-    "    static void Main() {" \
-    "        Console.WriteLine(\"🚀 $PROJECT_SAFE_NAME\");" \
-    "    }" \
-    "}"
-    ;;
-
-13) # Flutter
-    mkdir -p lib
-    create_file_with_header "lib/main.dart" \
-    "void main() {" \
-    "  print('🚀 $PROJECT_SAFE_NAME');" \
-    "}"
-    ;;
-
-14) # Kotlin
-    create_file_with_header "src/main.kt" \
-    "fun main() {" \
-    "    println(\"🚀 $PROJECT_SAFE_NAME\")" \
-    "}"
-    ;;
-
-15) # Swift
-    create_file_with_header "src/main.swift" \
-    "print(\"🚀 $PROJECT_SAFE_NAME\")"
-    ;;
-
-16) # Bash
-    create_file_with_header "src/main.sh" \
-    "#!/bin/bash" \
-    "echo '🚀 $PROJECT_SAFE_NAME'"
-
-    chmod +x src/main.sh
-    ;;
-
-esac
-# =========================
-# LICENSE
-# =========================
-cat <<EOF > LICENSES
+    # =========================
+    # LICENSE & DOCS
+    # =========================
+    cat <<EOF > LICENSES
 MIT License (English Version)
 
 Copyright (c) $(date +'%Y') $AUTHOR_FILE
@@ -466,11 +373,10 @@ O aviso de copyright acima e este aviso de permissão devem ser incluídos em to
 
 O SOFTWARE É FORNECIDO "COMO ESTÁ", SEM GARANTIA DE QUALQUER TIPO, EXPRESSA OU IMPLÍCITA, INCLUINDO, MAS NÃO SE LIMITANDO ÀS GARANTIAS DE COMERCIALIZAÇÃO, ADEQUAÇÃO A UM DETERMINADO FIM E NÃO INFRAÇÃO. EM NENHUM CASO OS AUTORES OU TITULARES DE COPYRIGHT SERÃO RESPONSÁVEIS POR QUALQUER RECLAMAÇÃO, DANOS OU OUTRA RESPONSABILIDADE, SEJA EM AÇÃO DE CONTRATO, DELITO OU DE OUTRA FORMA, DECORRENTE DE, FORA DE OU EM CONEXÃO COM O SOFTWARE OU O USO OU OUTRAS NEGOCIAÇÕES NO SOFTWARE.
 EOF
-
-# =========================
-# CONTRIBUTING
-# =========================
-cat <<EOF > CONTRIBUTING.md
+    # =========================
+    # CONTRIBUTING
+    # =========================
+    cat <<EOF > CONTRIBUTING.md
 # 🤝 Contribuindo para $PROJECT_SAFE_NAME
 
 Primeiramente, obrigado por se interessar em contribuir! 
@@ -486,11 +392,10 @@ Primeiramente, obrigado por se interessar em contribuir!
 - Push para a Branch
 - Abra um Pull Request
 EOF
-
-# =========================
-# CODE OF CONDUCT
-# =========================
-cat <<EOF > CODE_OF_CONDUCT.md
+    # =========================
+    # CODE OF CONDUCT
+    # =========================
+    cat <<EOF > CODE_OF_CONDUCT.md
 # Código de Conduta
 
 ## Nosso Compromisso
@@ -504,11 +409,10 @@ Nós, como membros, contribuintes e líderes, nos comprometemos a tornar a parti
 
 *Para mais detalhes, consulte o Contributor Covenant.*
 EOF
-
-# =========================
-# CHANGELOG
-# =========================
-cat <<EOF > CHANGELOG.md
+    # =========================
+    # LCHANGELOG
+    # =========================
+    cat <<EOF > CHANGELOG.md
 # 📜 Changelog
 
 Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
@@ -524,11 +428,10 @@ Todas as mudanças notáveis neste projeto serão documentadas neste arquivo.
 ### 🛠️ Alterado
 - Stack definida para: $STACK_NAME.
 EOF
-
-# =========================
-# README
-# =========================
-cat <<EOF > README.md
+    # =========================
+    # README
+    # =========================
+    cat <<EOF > README.md
 # 🚀 $PROJECT_SAFE_NAME
 
 > **Stack:** $STACK_NAME | **Versão:** $PROJECT_VERSION | **Licença:** $LICENSE_FILE
@@ -617,47 +520,25 @@ cat <<EOF >> README.md
 ---
 
 *Criado em: $(date +'%d/%m/%Y %H:%M')*
-
 EOF
 
-# =========================
-# GERAÇÃO DO GITHUB ACTIONS
-# =========================
-mkdir -p .github/workflows
-cat <<EOF > .github/workflows/ci.yml
-name: DevLab CI
-
+    # =========================
+    # CI/CD & GIT
+    # =========================
+    mkdir -p .github/workflows
+    cat <<EOF > .github/workflows/ci.yml
+name: CI - $PROJECT_SAFE_NAME
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-
+    branches: [ "main" ]
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Run Stack Tests
-        run: |
-          echo "Iniciando testes para $STACK_NAME..."
-          
-          if [[ "$STACK_NAME" == "Rust" && -f "Cargo.toml" ]]; then
-            cargo test
-          elif [[ "$STACK_NAME" == "Node.js" && -f "package.json" ]]; then
-            npm test
-          elif [[ "$STACK_NAME" == "Python" ]]; then
-            python3 -m unittest discover tests
-          elif [[ "$STACK_NAME" == "Bash" ]]; then
-            # -s bash: força o padrão do seu sistema
-            # -e SC1128: ignora o erro de shebang/linha 1
-            shellcheck -s bash -e SC1128 src/*.sh
-          else
-            echo "⚠️  Nenhum teste específico configurado ou arquivo de manifesto ausente. Pulando..."
-          fi
+      - run: $TEST_CMD
 EOF
-
+#
 # ==============================================================================
 #                             DEVLAB GIT MANAGER
 # ==============================================================================
@@ -891,7 +772,7 @@ while true; do
             ensure_gh_auth
 
             echo -e "${GREEN}┌──────────────────────────────────────────┐${NC}"
-            echo -e "${GREEN}│        🔄 SINCRONIZAÇÃO INTELIGENTE      │${NC}"
+            echo -e "${GREEN}│         🔄 SINCRONIZAÇÃO INTELIGENTE     │${NC}"
             echo -e "${GREEN}└──────────────────────────────────────────┘${NC}"
 
             GH_USER=$(gh api user -q .login 2>/dev/null)
@@ -902,16 +783,20 @@ while true; do
                 echo -e "${BLUE}📡 Conectando ao GitHub...${NC}"
                 git fetch origin >/dev/null 2>&1
 
-                # Se a branch remota existir, alinha o histórico antes
+                # Se a branch remota existir no GitHub
                 if git rev-parse --verify "origin/$CURRENT_BRANCH" &>/dev/null; then
-                    if ! git rev-parse --verify HEAD &>/dev/null; then
-                        git reset --mixed "origin/$CURRENT_BRANCH"
-                    fi
                     
-                    # Guarda alterações locais temporariamente
-                    git stash push -u -m "autostash_sync" >/dev/null 2>&1
-                    git pull origin "$CURRENT_BRANCH" --rebase
-                    git stash pop >/dev/null 2>&1
+                    # SE A PASTA LOCAL ESTIVER VAZIA (Sem commits/HEAD):
+                    # Baixa o projeto com segurança.
+                    if ! git rev-parse --verify HEAD &>/dev/null; then
+                        echo -e "${BLUE}📥 Pasta local vazia detectada. Baixando arquivos do GitHub...${NC}"
+                        git checkout -b "$CURRENT_BRANCH" "origin/$CURRENT_BRANCH" 2>/dev/null || git reset --hard "origin/$CURRENT_BRANCH"
+                    else
+                        # Se já houver histórico local, faz a sincronização normal via pull/rebase
+                        git stash push -u -m "autostash_sync" >/dev/null 2>&1
+                        git pull origin "$CURRENT_BRANCH" --rebase
+                        git stash pop >/dev/null 2>&1
+                    fi
                 fi
             else
                 REPO_EXISTS=$(gh repo view "$GH_USER/$REPO_NAME" --json name -q .name 2>/dev/null)
@@ -920,22 +805,27 @@ while true; do
                     git remote add origin "git@github.com:$GH_USER/$REPO_NAME.git" 2>/dev/null || \
                     git remote add origin "https://github.com/$GH_USER/$REPO_NAME.git"
                     git fetch origin
-                    git reset --mixed "origin/main"
+                    
+                    if ! git rev-parse --verify HEAD &>/dev/null; then
+                        git checkout -b "$CURRENT_BRANCH" "origin/main" 2>/dev/null || git reset --hard "origin/main"
+                    else
+                        git reset --mixed "origin/main"
+                    fi
                 else
                     echo -e "${YELLOW}✨ Criando novo repositório no GitHub...${NC}"
                     gh repo create "$REPO_NAME" --private --source=. --remote=origin
                 fi
             fi
 
-            # Realiza o commit das pendências se houver
+            # Realiza o commit das pendências se houver (incluindo exclusões com -A)
             if [[ -n $(git status --porcelain) ]]; then
                 echo -e "${BLUE}📦 Salvando alterações locais...${NC}"
-                git add .
+                git add -A
                 git commit -m "🛠️ chores: sincronização automática de arquivos"
             fi
 
-            git branch -M main
-            if git push -u origin main; then
+            git branch -M "$CURRENT_BRANCH"
+            if git push -u origin "$CURRENT_BRANCH"; then
                 echo -e "\n${GREEN}✅ Repositório local e GitHub sincronizados com sucesso!${NC}"
             else
                 echo -e "\n${RED}❌ Falha ao enviar arquivos. Verifique se há conflitos manuais.${NC}"
@@ -1109,42 +999,81 @@ while true; do
                 echo -e "${RED}❌ Erro: Nenhum repositório remoto (origin) configurado.${NC}"
                 echo -e "Use a opção 1 para sincronizar primeiro."
             else
+                CURRENT_BRANCH=$(git branch --show-current 2>/dev/null)
+                [[ -z "$CURRENT_BRANCH" ]] && CURRENT_BRANCH="main"
+
+                echo -e "${BLUE}📦 Verificando alterações locais...${NC}"
+                
+                # Adiciona tudo (novos arquivos, modificados e excluídos)
+                git add -A
+
+                # Se houver alterações pendentes, cria um commit automático
+                if [[ -n $(git status --porcelain) ]]; then
+                    echo -e "${BLUE}📝 Salvando alterações locais em um commit...${NC}"
+                    git commit -m "🛠️ chores: sincronização automática de arquivos"
+                else
+                    echo -e "${YELLOW}ℹ️ Nenhuma alteração nova detectada na pasta para commitar.${NC}"
+                fi
+
                 echo -e "📡 Enviando branch ${GREEN}$CURRENT_BRANCH${NC} para ${GREEN}origin${NC}..."
                 
+                # Tenta enviar as alterações
                 if git push -u origin "$CURRENT_BRANCH"; then
                     echo -e "\n${GREEN}┌──────────────────────────────────────────┐${NC}"
-                    echo -e "${GREEN}│      🚀 SUCESSO! PROJETO ATUALIZADO      │${NC}"
+                    echo -e "${GREEN}│         🚀 SUCESSO! PROJETO ATUALIZADO   │${NC}"
                     echo -e "${GREEN}└──────────────────────────────────────────┘${NC}"
                     echo -e "✨ Seus arquivos já estão seguros no GitHub."
                 else
                     echo -e "\n${RED}❌ FALHA NO PUSH!${NC}"
                     echo -e "Dica: Talvez existam mudanças no GitHub que você não tem localmente."
-                    echo -e "Tente usar a opção ${YELLOW}4) Pull${NC} antes de tentar o Push novamente."
+                    echo -e "Tente usar a opção ${YELLOW}1) Sincronizar${NC} ou ${YELLOW}4) Pull${NC} antes de tentar o Push novamente."
                 fi
             fi
             
             pause
             ;;
 
-        4) # PULL - ATUALIZAR REPOSITÓRIO LOCAL
+        4) # PULL - ATUALIZAR / RECUPERAR DO REPOSITÓRIO
             printf "\033[H\033[J"
             get_context
 
-            echo -e "${YELLOW}⬇️  BUSCANDO ATUALIZAÇÕES NO GITHUB...${NC}"
+            echo -e "${YELLOW}⬇️  BUSCANDO ATUALIZAÇÕES E RECUPERANDO ARQUIVOS DO GITHUB...${NC}"
 
             if ! git remote | grep -q "origin"; then
                 echo -e "${RED}❌ Erro: Remote 'origin' não encontrado.${NC}"
             else
+                CURRENT_BRANCH=$(git branch --show-current 2>/dev/null)
+                [[ -z "$CURRENT_BRANCH" ]] && CURRENT_BRANCH="main"
+
                 echo -e "📡 Sincronizando branch ${GREEN}$CURRENT_BRANCH${NC}..."
                 
-                if git pull origin "$CURRENT_BRANCH" --rebase; then
+                # Baixa as novidades do remoto sem aplicar na marra ainda
+                git fetch origin
+
+                # Pergunta se o usuário quer descartar alterações locais (arquivos apagados/modificados por engano)
+                echo -e "${YELLOW}Deseja descartar alterações locais e restaurar a pasta exatamente como está no GitHub?${NC}"
+                read -p "(Isso recuperará arquivos apagados por engano) [y/n]: " restaurar_tudo
+
+                if [[ "$restaurar_tudo" =~ ^[Yy]$ ]]; then
+                    echo -e "${BLUE}🔄 Redefinindo pasta local para o estado exato de origin/$CURRENT_BRANCH...${NC}"
+                    git reset --hard "origin/$CURRENT_BRANCH"
+                    git clean -fd  # Remove arquivos locais que não estão no git (opcional, mas limpa a pasta)
                     echo -e "\n${GREEN}┌──────────────────────────────────────────┐${NC}"
-                    echo -e "${GREEN}│       ✅ REPOSITÓRIO ATUALIZADO!         │${NC}"
+                    echo -e "${GREEN}│      ✅ PASTA RESTAURADA COM SUCESSO!    │${NC}"
                     echo -e "${GREEN}└──────────────────────────────────────────┘${NC}"
-                    echo -e "✨ Seu código local está em sincronia com a nuvem."
+                    echo -e "✨ Seus arquivos foram recuperados do GitHub."
                 else
-                    echo -e "\n${RED}⚠️  ATENÇÃO: CONFLITO DETECTADO!${NC}"
-                    echo -e "Resolva os conflitos manualmente antes de continuar."
+                    # Tenta o pull normal (merge seguro sem rebase para evitar conflito chato)
+                    if git pull origin "$CURRENT_BRANCH"; then
+                        echo -e "\n${GREEN}┌──────────────────────────────────────────┐${NC}"
+                        echo -e "${GREEN}│       ✅ REPOSITÓRIO ATUALIZADO!         │${NC}"
+                        echo -e "${GREEN}└──────────────────────────────────────────┘${NC}"
+                        echo -e "✨ Seu código local está em sincronia com a nuvem."
+                    else
+                        echo -e "\n${RED}⚠️  ATENÇÃO: CONFLITO DETECTADO!${NC}"
+                        echo -e "Houve divergência entre o seu código e o GitHub."
+                        echo -e "Dica: Se você apagou arquivos por engano, execute a opção 4 novamente e escolha 'y' para restaurar."
+                    fi
                 fi
             fi
 
@@ -1196,23 +1125,63 @@ while true; do
             pause
             ;;
 
-        7) # RESET (SEGURO)
+        7) # RESET PARA UM COMMIT ESPECÍFICO
             printf "\033[H\033[J"
             get_context
 
             echo -e "${RED}┌──────────────────────────────────────────┐${NC}"
-            echo -e "${RED}│          ⚠️  AVISO DE RESET SEGURO        │${NC}"
+            echo -e "${RED}│          ⚠️  RESET PARA UM COMMIT        │${NC}"
             echo -e "${RED}└──────────────────────────────────────────┘${NC}"
-            echo -e "Isso irá descartar todas as alterações não salvas nos arquivos existentes."
-            echo -e "\n${YELLOW}Tem certeza que deseja continuar? (y/n)${NC}"
-            read -rp "👉 Escolha: " CONFIRM
+            echo -e "Isso irá reverter a pasta local e os arquivos para um commit específico."
+            echo -e "Qualquer alteração posterior a esse commit será ignorada.\n"
+            
+            # Mostra uma lista rápida dos últimos commits para ajudar a lembrar o hash/código
+            echo -e "${BLUE}📋 Últimos commits do projeto:${NC}"
+            git log --oneline -n 10
+            echo ""
 
-            if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
-                echo -e "\n${YELLOW}⏪ Restaurando arquivos para o último commit...${NC}"
-                git checkout .
-                echo -e "\n${GREEN}✅ Reset concluído!${NC}"
+            read -rp "👉 Digite o hash (código) do commit para o qual deseja voltar: " COMMIT_HASH
+
+            if [[ -z "$COMMIT_HASH" ]]; then
+                echo -e "\n${YELLOW}⚠️ Nenhum commit informado. Operação cancelada.${NC}"
             else
-                echo -e "\n${BLUE}ℹ️  Operação cancelada pelo usuário.${NC}"
+                echo -e "\n${YELLOW}Tem certeza que deseja voltar a pasta para o commit $COMMIT_HASH? (y/n)${NC}"
+                read -rp "👉 Escolha: " CONFIRM
+
+                if [[ "$CONFIRM" =~ ^[Yy]$ ]]; then
+                    echo -e "\n${YELLOW}⏪ Revertendo projeto para o commit $COMMIT_HASH...${NC}"
+                    
+                    # Força o repositório local a voltar para o commit informado
+                    if git reset --hard "$COMMIT_HASH"; then
+                        # Remove arquivos criados após esse commit que não faziam parte dele
+                        git clean -fd
+                        
+                        echo -e "\n${GREEN}✅ Reset local concluído com sucesso!${NC}"
+                        
+                        # Segunda pergunta: Tornar permanente no GitHub (Opção A) ou manter apenas local (Opção B)?
+                        echo -e "\n${YELLOW}Deseja tornar essa alteração permanente no GitHub?${NC}"
+                        read -rp "👉 Enviar para o GitHub? (y/n): " PERMANENTE
+
+                        if [[ "$PERMANENTE" =~ ^[Yy]$ ]]; then
+                            CURRENT_BRANCH=$(git branch --show-current 2>/dev/null)
+                            [[ -z "$CURRENT_BRANCH" ]] && CURRENT_BRANCH="main"
+                            
+                            echo -e "${BLUE}📡 Atualizando o GitHub (push --force)...${NC}"
+                            if git push origin "$CURRENT_BRANCH" --force; then
+                                echo -e "\n${GREEN}🚀 Sucesso! GitHub atualizado e sincronizado com o commit $COMMIT_HASH.${NC}"
+                            else
+                                echo -e "\n${RED}❌ Falha ao atualizar o GitHub.${NC}"
+                            fi
+                        else
+                            echo -e "\n${BLUE}ℹ️ Operação mantida apenas localmente (Opção B). O GitHub continua intacto.${NC}"
+                            echo -e "Dica: Se quiser voltar ao normal depois, use a opção 1 ou 4."
+                        fi
+                    else
+                        echo -e "\n${RED}❌ Erro: O hash do commit informado parece inválido.${NC}"
+                    fi
+                else
+                    echo -e "\n${BLUE}ℹ️ Operação cancelada pelo usuário.${NC}"
+                fi
             fi
 
             pause
@@ -1464,7 +1433,11 @@ while true; do
             
         0) # SAIR
             printf "\033[H\033[J"
-            echo -e "${GREEN} Atividades encerradas no DevLab Manager. Até logo! 👋${NC}\n"
+            echo -e "${YELLOW}┌────────────────────────────────────────────────────────────┐${NC}"
+            echo -e "${YELLOW}│    👋 Atividades encerradas no DevLab Manager. Até logo!   │${NC}"
+            echo -e "${YELLOW}└────────────────────────────────────────────────────────────┘${NC}"
+            echo
+            read -rp "Pressione ENTER para fechar o terminal..."
             exit 0
             ;;
 
@@ -1476,78 +1449,74 @@ while true; do
 done
 EOF
 chmod +x devlab_git_manager.sh
+    # =========================
+    # CRIAÇÂO DO REPOSITÓRIO
+    # =========================
+    echo -e "\n${YELLOW}⚙️ CONFIGURAÇÕES DE DEPLOY:${NC}"
+    read -rp "    > Criar no GitHub? (y/n): " CREATE_GH
 
-# =========================
-# CI/CD & GIT
-# =========================
-mkdir -p .github/workflows
-cat <<EOF > .github/workflows/ci.yml
-name: CI - $PROJECT_SAFE_NAME
-on:
-  push:
-    branches: [ "main" ]
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: $TEST_CMD
-EOF
-# =========================
-# GIT & GITHUB FLOW
-# =========================
-echo -e "\n${YELLOW}⚙️ CONFIGURAÇÕES DE DEPLOY:${NC}"
-read -rp "    > Criar no GitHub? (y/n): " CREATE_GH
+    if [[ "$CREATE_GH" =~ ^[Yy]$ ]]; then
+        GIT_USER=$(git config --global user.name)
+        GIT_EMAIL=$(git config --global user.email)
 
-if [[ "$CREATE_GH" =~ ^[Yy]$ ]]; then
+        if [[ -z "$GIT_USER" || -z "$GIT_EMAIL" ]]; then
+            echo -e "\n${YELLOW}👤 Identidade Git não encontrada! Necessário para o GitHub.${NC}"
+            read -rp "    📧 E-mail do GitHub: " NEW_EMAIL
+            read -rp "    👤 Nome de Usuário: " NEW_NAME
+            git config --global user.email "$NEW_EMAIL"
+            git config --global user.name "$NEW_NAME"
+        fi
 
-    GIT_USER=$(git config --global user.name)
-    GIT_EMAIL=$(git config --global user.email)
-
-    if [[ -z "$GIT_USER" || -z "$GIT_EMAIL" ]]; then
-        echo -e "\n${YELLOW}👤 Identidade Git não encontrada! Necessário para o GitHub.${NC}"
-        read -rp "   📧 E-mail do GitHub: " NEW_EMAIL
-        read -rp "   👤 Nome de Usuário: " NEW_NAME
-        git config --global user.email "$NEW_EMAIL"
-        git config --global user.name "$NEW_NAME"
+        ensure_gh_auth
     fi
 
-    ensure_gh_auth
-fi
+    git init &>/dev/null
+    git branch -M main &>/dev/null
+    git add .
+    git commit -m "🔥 init: ($PROJECT_SAFE_NAME) | $STACK_NAME | v$PROJECT_VERSION | Início de projeto" &>/dev/null
 
-git init &>/dev/null
-git branch -M main &>/dev/null
-git add .
-git commit -m "🔥 init: ($PROJECT_SAFE_NAME) | $STACK_NAME | v$PROJECT_VERSION | Início de projeto" &>/dev/null
-
-if [[ "$CREATE_GH" =~ ^[Yy]$ ]]; then
-    echo -e "${YELLOW}🌐 Verificando repositório remoto...${NC}"
-    
-    if gh repo create "$PROJECT_SAFE_NAME" --private --source=. --remote=origin &>/dev/null; then
-        git push -u origin main &>/dev/null
-        echo -e "${GREEN}✅ Repositório criado e sincronizado!${NC}"
-    else
-        echo -e "${YELLOW}⚠️  Repo já existe. Sincronizando com cautela...${NC}"
-        GH_USER=$(gh api user -q .login)
-        git remote add origin "https://github.com/$GH_USER/$PROJECT_SAFE_NAME.git" 2>/dev/null
+    if [[ "$CREATE_GH" =~ ^[Yy]$ ]]; then
+        echo -e "${YELLOW}🌐 Verificando repositório remoto...${NC}"
         
-        git fetch origin main &>/dev/null
-        
-        git merge origin/main --allow-unrelated-histories -X ours -m "📡 integração: Repositório local e remoto sincronizados" &>/dev/null
-        
-        git push -u origin main &>/dev/null
-        echo -e "${GREEN}✅ Vinculado e protegido contra conflitos!${NC}"
+        if gh repo create "$PROJECT_SAFE_NAME" --private --source=. --remote=origin &>/dev/null; then
+            git push -u origin main &>/dev/null
+            echo -e "${GREEN}✅ Repositório criado e sincronizado!${NC}"
+        else
+            echo -e "${YELLOW}⚠️ Repo já existe. Sincronizando com cautela...${NC}"
+            GH_USER=$(gh api user -q .login)
+            git remote add origin "https://github.com/$GH_USER/$PROJECT_SAFE_NAME.git" 2>/dev/null
+            git fetch origin main &>/dev/null
+            git merge origin/main --allow-unrelated-histories -X ours -m "📡 integração: Repositório local e remoto sincronizados" &>/dev/null
+            git push -u origin main &>/dev/null
+            echo -e "${GREEN}✅ Vinculado e protegido contra conflitos!${NC}"
+        fi
     fi
-fi
 
-# =========================
-# FINALIZAÇÃO
-# =========================
-echo -e "${GREEN}┌──────────────────────────────────────────┐${NC}"
-echo -e "${GREEN}│    🚀 DEVLAB FINALIZADO COM SUCESSO!     │${NC}"
-echo -e "${GREEN}└──────────────────────────────────────────┘${NC}"
-echo -e " 📍 LOCAL:   ${NC}$PROJECT_PATH"
-echo -e " 📌 VERSÃO:  ${NC}$PROJECT_VERSION"
-echo -e " 🧠 STACK:   ${NC}$STACK_NAME"
-echo -e " 🛠️  GIT MGR: ${NC}./devlab_git_manager.sh"
-echo -e "${GREEN}------------------------------------------------------------${NC}"
+    # =========================
+    # FINALIZAÇÃO DO PROJETO
+    # =========================
+    echo -e "${GREEN}┌──────────────────────────────────────────┐${NC}"
+    echo -e "${GREEN}│    🚀 DEVLAB FINALIZADO COM SUCESSO!     │${NC}"
+    echo -e "${GREEN}└──────────────────────────────────────────┘${NC}"
+    echo -e " 📍 LOCAL:    ${NC}$PROJECT_PATH"
+    echo -e " 📌 VERSÃO:  ${NC}$PROJECT_VERSION"
+    echo -e " 🧠 STACK:   ${NC}$STACK_NAME"
+    echo -e " 🛠️  GIT MGR: ${NC}./devlab_git_manager.sh"
+    echo -e "${GREEN}------------------------------------------------------------${NC}"
+    echo -e "\n${GREEN}🎉 Projeto '$PROJECT_SAFE_NAME' criado com sucesso em '$PROJECT_PATH'!${NC}"
+    echo -e "${GREEN}------------------------------------------------------------${NC}"
+
+    # =========================
+    # PERGUNTA DE REPETIÇÃO
+    # =========================
+    echo
+    read -rp "Deseja criar outro projeto? (y/n): " CONTINUE_CHOICE
+    if [[ ! "$CONTINUE_CHOICE" =~ ^[Yy]$ ]]; then
+        echo -e "${YELLOW}┌────────────────────────────────────────────┐${NC}"
+        echo -e "${YELLOW}│    👋 Saindo do DevLab Engine. Até mais!   │${NC}"
+        echo -e "${YELLOW}└────────────────────────────────────────────┘${NC}"
+        echo
+        read -rp "Pressione ENTER para fechar o terminal..."
+        break
+    fi
+done
