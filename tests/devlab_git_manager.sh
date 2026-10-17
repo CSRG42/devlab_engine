@@ -227,7 +227,7 @@ while true; do
             ensure_gh_auth
 
             echo -e "${GREEN}┌──────────────────────────────────────────┐${NC}"
-            echo -e "${GREEN}│        🔄 SINCRONIZAÇÃO INTELIGENTE      │${NC}"
+            echo -e "${GREEN}│         🔄 SINCRONIZAÇÃO INTELIGENTE     │${NC}"
             echo -e "${GREEN}└──────────────────────────────────────────┘${NC}"
 
             GH_USER=$(gh api user -q .login 2>/dev/null)
@@ -238,16 +238,20 @@ while true; do
                 echo -e "${BLUE}📡 Conectando ao GitHub...${NC}"
                 git fetch origin >/dev/null 2>&1
 
-                # Se a branch remota existir, alinha o histórico antes
+                # Se a branch remota existir no GitHub
                 if git rev-parse --verify "origin/$CURRENT_BRANCH" &>/dev/null; then
-                    if ! git rev-parse --verify HEAD &>/dev/null; then
-                        git reset --mixed "origin/$CURRENT_BRANCH"
-                    fi
                     
-                    # Guarda alterações locais temporariamente
-                    git stash push -u -m "autostash_sync" >/dev/null 2>&1
-                    git pull origin "$CURRENT_BRANCH" --rebase
-                    git stash pop >/dev/null 2>&1
+                    # SE A PASTA LOCAL ESTIVER VAZIA (Sem commits/HEAD):
+                    # Baixa o projeto com segurança.
+                    if ! git rev-parse --verify HEAD &>/dev/null; then
+                        echo -e "${BLUE}📥 Pasta local vazia detectada. Baixando arquivos do GitHub...${NC}"
+                        git checkout -b "$CURRENT_BRANCH" "origin/$CURRENT_BRANCH" 2>/dev/null || git reset --hard "origin/$CURRENT_BRANCH"
+                    else
+                        # Se já houver histórico local, faz a sincronização normal via pull/rebase
+                        git stash push -u -m "autostash_sync" >/dev/null 2>&1
+                        git pull origin "$CURRENT_BRANCH" --rebase
+                        git stash pop >/dev/null 2>&1
+                    fi
                 fi
             else
                 REPO_EXISTS=$(gh repo view "$GH_USER/$REPO_NAME" --json name -q .name 2>/dev/null)
@@ -256,22 +260,27 @@ while true; do
                     git remote add origin "git@github.com:$GH_USER/$REPO_NAME.git" 2>/dev/null || \
                     git remote add origin "https://github.com/$GH_USER/$REPO_NAME.git"
                     git fetch origin
-                    git reset --mixed "origin/main"
+                    
+                    if ! git rev-parse --verify HEAD &>/dev/null; then
+                        git checkout -b "$CURRENT_BRANCH" "origin/main" 2>/dev/null || git reset --hard "origin/main"
+                    else
+                        git reset --mixed "origin/main"
+                    fi
                 else
                     echo -e "${YELLOW}✨ Criando novo repositório no GitHub...${NC}"
                     gh repo create "$REPO_NAME" --private --source=. --remote=origin
                 fi
             fi
 
-            # Realiza o commit das pendências se houver
+            # Realiza o commit das pendências se houver (incluindo exclusões com -A)
             if [[ -n $(git status --porcelain) ]]; then
                 echo -e "${BLUE}📦 Salvando alterações locais...${NC}"
-                git add .
+                git add -A
                 git commit -m "🛠️ chores: sincronização automática de arquivos"
             fi
 
-            git branch -M main
-            if git push -u origin main; then
+            git branch -M "$CURRENT_BRANCH"
+            if git push -u origin "$CURRENT_BRANCH"; then
                 echo -e "\n${GREEN}✅ Repositório local e GitHub sincronizados com sucesso!${NC}"
             else
                 echo -e "\n${RED}❌ Falha ao enviar arquivos. Verifique se há conflitos manuais.${NC}"
@@ -800,7 +809,11 @@ while true; do
             
         0) # SAIR
             printf "\033[H\033[J"
-            echo -e "${GREEN} Atividades encerradas no DevLab Manager. Até logo! 👋${NC}\n"
+            echo -e "${YELLOW}┌────────────────────────────────────────────────────────────┐${NC}"
+            echo -e "${YELLOW}│    👋 Atividades encerradas no DevLab Manager. Até logo!   │${NC}"
+            echo -e "${YELLOW}└────────────────────────────────────────────────────────────┘${NC}"
+            echo
+            read -rp "Pressione ENTER para fechar o terminal..."
             exit 0
             ;;
 

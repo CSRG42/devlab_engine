@@ -34,15 +34,35 @@ meu-projeto/
 └── README.md        # Guia rápido e visão geral do projeto
 ```
 
-| **Pasta**     | **Função**                                                           |
-| ------------- | -------------------------------------------------------------------- |
-| **src/**      | Código fonte principal do seu projeto.                               |
-| **docs/**     | Documentação, guias e manuais técnicos.                              |
-| **tests/**    | Suíte de testes automatizados e unitários.                           |
-| **assets/**   | Arquivos estáticos (imagens, ícones, fontes).                        |
-| **build/**    | Arquivos temporários de compilação ou processos intermediários.      |
-| **releases/** | Binários finais e pacotes prontos para distribuição (ex: .deb, .sh). |
-| **logs/**     | Registros de execução, histórico de erros e debug.                   |
+| Pasta       | Função           | Descrição                                              |
+| :---------- | :--------------- | :----------------------------------------------------- |
+| `src/`      | **Source**       | Onde fica o código principal e os scripts de execução. |
+| `docs/`     | **Documentação** | Manuais, guias e referências do projeto.               |
+| `tests/`    | **Testes**       | Scripts de validação e unit tests.                     |
+| `logs/`     | **Registros**    | Logs de execução, erros e depuração.                   |
+| `assets/`   | **Recursos**     | Arquivos estáticos (imagens, CSS, ícones).             |
+| `build/`    | **Build**        | Código compilado ou minificado para produção.          |
+| `releases/` | **Releases**     | Versões finais empacotadas para distribuição.          |
+
+---
+
+## 🎨 Padronização de Commits (Conventional Commits)
+
+Este projeto utiliza emojis e prefixos padronizados para manter um histórico de alterações legível e organizado:
+
+| Tipo                | Descrição                         | Tipo                | Descrição                         |
+| :------------------ | :-------------------------------- | :------------------ | :-------------------------------- |
+| 🚀 **Adicionado**   | Nova funcionalidade/recurso       | 🐛 **Corrigido**    | Correção de bugs ou erros         |
+| 🛠️ **Manutenção**  | Manutenção geral e chores         | ♻️ **Refatorado**   | Melhorias no código existente     |
+| ⚡ **Performance**   | Otimização de velocidade/recursos | 🎨 **Estilo**       | Formatação e ajustes visuais      |
+| 📝 **Documentação** | Atualizações no README ou docs    | 🧪 **Testes**       | Criação ou ajuste de testes       |
+| 🔧 **Build**        | Mudanças no sistema de build      | ⚙️ **CI/CD**        | Workflows e integração contínua   |
+| 🔙 **Reversão**     | Reverter commits anteriores       | 🔥 **Inicial**      | Início do projeto/First commit    |
+| 🔐 **Segurança**    | Patches e chaves de segurança     | 📦 **Dependências** | Atualização de pacotes/libs       |
+| 🌐 **Traduções**    | Localização e idiomas             | 📎 **Assets**       | Manipulação de arquivos estáticos |
+
+## 🤖 Automação DevLab
+As operações realizadas pelo **DevLab Git Manager** incluem ícones contextuais (🔄 Sincronização, ⬆️ Push, ⬇️ Pull) para facilitar o rastreio via CLI.
 
 ---
 
